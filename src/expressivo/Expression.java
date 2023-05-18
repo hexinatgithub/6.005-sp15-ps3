@@ -6,6 +6,7 @@ package expressivo;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -13,6 +14,9 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Stack;
 
 import expressivo.parser.ExpressionLexer;
@@ -51,11 +55,15 @@ public interface Expression {
      * @throws IllegalArgumentException if the expression is invalid
      */
     public static Expression parse(String input) {
-    	ParseTree tree = makeParser(input).root();
-        ParseTreeWalker walker = new ParseTreeWalker();
-        MakeExpression listener = new MakeExpression();
-        walker.walk(listener, tree);
-        return listener.getExpression();
+    	try {
+    		ParseTree tree = makeParser(input).root();
+            ParseTreeWalker walker = new ParseTreeWalker();
+            MakeExpression listener = new MakeExpression();
+            walker.walk(listener, tree);
+            return listener.getExpression();
+    	} catch (ParseCancellationException e) {
+			throw new IllegalArgumentException(input);
+		}
     }
     
     /**
@@ -93,6 +101,34 @@ public interface Expression {
     public boolean isPrimitive();
     
     /**
+     * Differentiate this expression with respect to variable.
+     * 
+     * @param variable to differentiate by.
+     * @return expression's derivative with respect to variable.
+     * @throws IllegalArgumentException if the expression or variable is invalid
+     */
+    public Expression differentiate(String variable);
+    
+    /**
+     * Simplify substitutes the values for those variables into the expression, 
+     * and attempts to simplfy the substituted polynomial as much as it can.
+     * If substituted polynomial is a constant expression, with no variables remaining,
+     * then simplification must reduce it to a single number.
+     * If substituted polynomials that still contain variables is underdetermined,
+     * reduce child polynomials to number if no variables remaining.
+     * @param environment mapping of variables to values
+     * @return a new simplified Expression left original Expression unmodified.
+     */
+    public Expression simplify(Map<String, Double> environment);
+    
+    /**
+     * @return true expression is constant otherwise false
+     */
+    public default boolean constant() {
+    	return false;
+    }
+    
+    /**
      * @param that Expression to be add
      * @return a new Expression represent add this Expression with other Expression
      */
@@ -108,6 +144,10 @@ public interface Expression {
     	return new MultiplicationExpression(exp1, exp2);
     }
     
+    /**
+     * @param input expression
+     * @return ExpressionParser generate from input
+     */
     private static ExpressionParser makeParser(String input) {
         CharStream stream = new ANTLRInputStream(input);
         ExpressionLexer lexer = new ExpressionLexer(stream);
@@ -117,6 +157,7 @@ public interface Expression {
         parser.reportErrorsAsExceptions();
         return parser;
     }
+    
 }
 
 class MakeExpression implements ExpressionListener {

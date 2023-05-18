@@ -1,5 +1,7 @@
 package expressivo;
 
+import java.util.Map;
+
 public class VariablesExpression implements Expression {
 	/**
 	 * Abstraction function:
@@ -12,7 +14,7 @@ public class VariablesExpression implements Expression {
 	
 	private final String name;
 	
-	public VariablesExpression(String v) throws IllegalArgumentException {
+	public VariablesExpression(String v) {
 		if (!v.matches("[a-zA-Z]+")) {
 			throw new IllegalArgumentException("invalid variable name: " + v);
 		}
@@ -26,6 +28,28 @@ public class VariablesExpression implements Expression {
 	
 	public boolean isPrimitive() {
 		return true;
+	}
+	
+	@Override public Expression differentiate(String variable) {
+        return differentiate(new VariablesExpression(variable));
+	}
+	
+	@Override public Expression simplify(Map<String, Double> environment) {
+		if (environment.containsKey(name)) {
+			return new NumberExpression(environment.get(name).toString());
+		}
+		return this;
+	}
+	
+	/**
+	 * @param variable VariablesExpression to differentiate by
+	 * @return expression's derivative with respect to variable.
+	 */
+	public Expression differentiate(VariablesExpression variable) {
+        if (this.equals(variable)) {
+            return new NumberExpression("1");
+        } 
+        return new NumberExpression("0");
 	}
 	
 	@Override public String toString() {

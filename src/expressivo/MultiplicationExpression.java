@@ -1,5 +1,7 @@
 package expressivo;
 
+import java.util.Map;
+
 public class MultiplicationExpression implements Expression {
 	/**
 	 * Abstraction function:
@@ -19,6 +21,24 @@ public class MultiplicationExpression implements Expression {
 	
 	public boolean isPrimitive() {
 		return false;
+	}
+	
+    @Override public Expression differentiate(String variable) {
+        return new MultiplicationExpression(
+        		new MultiplicationExpression(exp1, exp2.differentiate(variable)),
+        		new MultiplicationExpression(exp2, exp1.differentiate(variable)));
+    }
+    
+	@Override public Expression simplify(Map<String, Double> environment) {
+		Expression left = exp1.simplify(environment);
+		Expression right = exp2.simplify(environment);
+		
+		if (left.constant() && right.constant()) {
+			Double value = Double.parseDouble(left.toString()) *
+					Double.parseDouble(right.toString());
+			return new NumberExpression(value.toString());
+		}
+		return new MultiplicationExpression(left, right);
 	}
 	
 	@Override public String toString() {

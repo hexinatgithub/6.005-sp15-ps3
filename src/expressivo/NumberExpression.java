@@ -1,12 +1,9 @@
 package expressivo;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.swing.GroupLayout.Group;
-
-import org.hamcrest.core.IsInstanceOf;
 
 public class NumberExpression implements Expression {
 	/**
@@ -20,7 +17,7 @@ public class NumberExpression implements Expression {
 	
 	private final BigDecimal decimal;
 	
-	public NumberExpression(String value) throws IllegalArgumentException {
+	public NumberExpression(String value) {
 		Pattern regex = Pattern.compile("^0*(?<decimal>\\d+(\\.\\d{1,4})?)\\d*$");
 		Matcher m = regex.matcher(value);
 		if (!m.matches()) {
@@ -35,6 +32,26 @@ public class NumberExpression implements Expression {
 	
 	public boolean isPrimitive() {
 		return true;
+	}
+	
+	@Override public Expression differentiate(String variable) {
+		return differentiate(new VariablesExpression(variable));
+	}
+	
+	@Override public Expression simplify(Map<String, Double> environment) {
+		return this;
+	}
+	
+    public boolean constant() {
+    	return true;
+    }
+	
+	/**
+	 * @param variable VariablesExpression to differentiate by
+	 * @return expression's derivative with respect to variable.
+	 */
+	public Expression differentiate(VariablesExpression variable) {
+		return new NumberExpression("0");
 	}
 	
 	@Override public String toString() {
